@@ -7,7 +7,6 @@
 #define screen_height 40
 #define max_number_of_3d_points 100000 // lots of available space for the 3d points for the symbol. Might need to be changed depending on the increment value and size
 #define M_PI 3.14159265358979323846
-const float theta_spacing = 0.01;
 int mesh_size;
 char output[screen_width][screen_height];
 float zbuffer[screen_width][screen_height];
@@ -18,17 +17,18 @@ float normals[max_number_of_3d_points][3];          // Store the surface normal 
 float mesh[max_number_of_3d_points][3];             // Store the mesh after rotation
 
 int camera_pos[] = {0, -1, -25};
-float fov_value = 40; // Just an arbitrary value for fov, lower is higher fov
 float distance_to_screen = 0;
-float font_ratio = 4;       // Change if you want the shape wider or slimmer
-float fill_spacing = 0.125; // how much the loop drawing a face is incremented each time
+float fov_value = 40;            // Just an arbitrary value for fov, lower is higher fov
+float light_pos[] = {5, -5, -5}; // Location of the light which causes shading
+float light_direction[3];
+float font_ratio = 4;             // Change if your font makes the logo appear distorted
+float fill_spacing = 0.125;       // how much the loop drawing a face is incremented each time
+const float theta_spacing = 0.01; // how dense are the circles
+int size = 8;                     // Size of the logo
 float fps;
 float frame_start_time;
 float target_fps = 100;
 float x_angle, y_angle, z_angle;
-float light_pos[] = {5, -5, -5}; // Location of the light which causes shading
-float light_direction[3];
-//char ascii_palette[] = ".,-~:;=!*#$@";
 char ascii_palette[] = ".,-~:;=!?#$&@M";
 int basis_vectors[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 void printToScreen()
@@ -71,14 +71,15 @@ void createSymbol()
     int closest_z = -1;
     float circle_width = 2;
     int counter = 0;
-    int size = 8;
     int height_of_ridge = 0 - size / 5;
     float gradient = -0.1;
     float displacement = size / 2;
     float z_fighting_offset = 0.2;
-    for (float depth = closest_z; depth <= -closest_z; depth += fill_spacing) // The encapsulating loop for depth
+    for (float depth = closest_z; round(10 * depth) <= -(10 * closest_z); depth += fill_spacing) // The encapsulating loop for depth
     {
-        if (depth == closest_z || depth == -closest_z) // only passes if doing the closes or furthest z value
+        bool closest_face = depth == closest_z;
+        bool furthest_face = (round(10 * depth) == -(10 * closest_z)); // simple way to compare a float to an int to 2 decimal places, used in for loop also
+        if (closest_face || furthest_face)                             // only passes if doing the closes or furthest z value so the shape is hollow
         {
             for (float i = 0; i < circle_width / 2; i += fill_spacing) // draws the circle faces
             {
@@ -130,7 +131,7 @@ void createSymbol()
         }
         float y_value_of_solid_fill = sin(4) * size;
 
-        if (depth == closest_z || depth == -closest_z) // do either closest or furthest face, only at start and end of z loop so it is hollow.
+        if (closest_face || furthest_face) // do either closest or furthest face, only at start and end of z loop so it is hollow.
         {
             // traverse bottom up, left to right, this is the curved solid fill
             for (float row = -size - z_fighting_offset; row < y_value_of_solid_fill + size / 4; row += fill_spacing) // bottom up
@@ -144,11 +145,11 @@ void createSymbol()
                         original_mesh[counter][0] = column;
                         original_mesh[counter][1] = row;
 
-                        if (depth == closest_z) // to prevent z fighting
+                        if (closest_face) // to prevent z fighting
                         {
                             original_mesh[counter][2] = depth - z_fighting_offset;
                         }
-                        else if (depth == -closest_z)
+                        else if (furthest_face)
                         {
                             original_mesh[counter][2] = depth + z_fighting_offset;
                         }
@@ -159,11 +160,11 @@ void createSymbol()
                     {
                         original_mesh[counter][0] = column;
                         original_mesh[counter][1] = row;
-                        if (depth == closest_z) // to prevent z fighting
+                        if (closest_face) // to prevent z fighting
                         {
                             original_mesh[counter][2] = depth - z_fighting_offset;
                         }
-                        if (depth == -closest_z)
+                        if (furthest_face)
                         {
                             original_mesh[counter][2] = depth + z_fighting_offset;
                         }
@@ -309,7 +310,7 @@ void renderFrame() // Puts points on the z plane and makes them ints
             // pixel is on screen
             if (mesh[i][2] < zbuffer[x][y])
             {
-                int luminance_index = round(13 * dotProduct(normals[i], light_direction)); // ranges from 0 to 13
+                int luminance_index = round((sizeof(ascii_palette) - 2) * dotProduct(normals[i], light_direction)); // ranges from 0 to length of ascii_palette (-2 because of quotation marks when declared)
                 if (luminance_index < 0)
                 {
                     luminance_index = 0;
@@ -349,18 +350,17 @@ void manageTime()
 int main()
 {
     createSymbol();
-    //usleep(100000000);
     lightSetup();
     frame_start_time = clock() / CLOCKS_PER_SEC;
     for (;;)
     {
-        rotationSystem(0, 0.6, 0); // x,y, or z axis to rotate around
+        rotationSystem(0, 0.5, 0); // x,y, or z axis to rotate around
         rotate();
         initialiseZbuffer();
         renderFrame();
         printToScreen();
         manageTime();
-        printf("mesh size: %d fps: %.1f \n", mesh_size, fps);
+        //printf("mesh size: %d fps: %.1f \n", mesh_size, fps);
         usleep((1000 / target_fps) * 1000);
     }
 }
