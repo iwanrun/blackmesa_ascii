@@ -15,8 +15,8 @@ float zbuffer[screen_width][screen_height];
 float original_mesh[max_number_of_3d_points][3];
 float original_normals[max_number_of_3d_points][3]; // Store the surface normal of the points in here when creating the shape
 float normals[max_number_of_3d_points][3];          // Store the surface normal of the points after rotation
+float mesh[max_number_of_3d_points][3];             // Store the mesh after rotation
 
-float mesh[max_number_of_3d_points][3];
 int camera_pos[] = {0, -1, -25};
 float fov_value = 40; // Just an arbitrary value for fov, lower is higher fov
 float distance_to_screen = 0;
