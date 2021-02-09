@@ -5,7 +5,7 @@
 #include <time.h>
 #define screen_width 100
 #define screen_height 40
-#define max_number_of_3d_points 100000 // roughly enough points in the 3d space for the symbol? this depends on the increment value and size
+#define max_number_of_3d_points 100000 // lots of available space for the 3d points for the symbol. Might need to be changed depending on the increment value and size
 #define M_PI 3.14159265358979323846
 const float theta_spacing = 0.01;
 int mesh_size;
