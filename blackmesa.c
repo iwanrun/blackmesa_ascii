@@ -360,7 +360,7 @@ int main()
         renderFrame();
         printToScreen();
         manageTime();
-        printf("mesh size: %d fps: %.1f \n", mesh_size, fps); // comment this out if you'd like
+        printf("mesh size: %d fps: %.1f \n", mesh_size, fps);
         usleep((1000 / target_fps) * 1000);
     }
 }
