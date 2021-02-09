@@ -21,9 +21,9 @@ float distance_to_screen = 0;
 float fov_value = 40;            // Just an arbitrary value for fov, lower is higher fov
 float light_pos[] = {5, -5, -5}; // Location of the light which causes shading
 float light_direction[3];
-float font_ratio = 4;             // Change if your font makes the logo appear distorted
-float fill_spacing = 0.125;       // how much the loop drawing a face is incremented each time
-const float theta_spacing = 0.01; // how dense are the circles
+float font_ratio = 4;             // Lower makes the output appear slimmer, higher value is wider.
+float fill_spacing = 0.125;       // By how much the loop drawing a face is incremented, which impacts density of faces, lower is more dense
+float theta_spacing = 0.01; // how dense are the circles
 int size = 8;                     // Size of the logo
 float fps;
 float frame_start_time;
