@@ -30,7 +30,7 @@ float frame_start_time;
 float target_fps = 100;
 float x_angle, y_angle, z_angle;
 char ascii_palette[] = ".,-~:;=!?#$&@M";
-int basis_vectors[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+
 void printToScreen()
 {
     printf("\x1b[H");
@@ -310,7 +310,7 @@ void renderFrame() // Puts points on the z plane and makes them ints
             // pixel is on screen
             if (mesh[i][2] < zbuffer[x][y])
             {
-                int luminance_index = round((sizeof(ascii_palette) - 2) * dotProduct(normals[i], light_direction)); // ranges from 0 to length of ascii_palette (-2 because of quotation marks when declared)
+                int luminance_index = round((sizeof(ascii_palette) - 2) * dotProduct(normals[i], light_direction)); // ranges from 0 to length of ascii_palette
                 if (luminance_index < 0)
                 {
                     luminance_index = 0;
