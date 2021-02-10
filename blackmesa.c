@@ -21,10 +21,10 @@ float distance_to_screen = 0;
 float fov_value = 40;            // Just an arbitrary value for fov, lower is higher fov
 float light_pos[] = {5, -5, -5}; // Location of the light which causes shading
 float light_direction[3];
-float font_ratio = 4;             // Lower makes the output appear slimmer, higher value is wider.
-float fill_spacing = 0.125;       // By how much the loop drawing a face is incremented, which impacts density of faces, lower is more dense
+float font_ratio = 4;       // Lower makes the output appear slimmer, higher value is wider.
+float fill_spacing = 0.125; // By how much the loop drawing a face is incremented, which impacts density of faces, lower is more dense
 float theta_spacing = 0.01; // how dense are the circles
-int size = 8;                     // Size of the logo
+int size = 8;               // Size of the logo
 float fps;
 float frame_start_time;
 float target_fps = 100;
@@ -58,7 +58,7 @@ void printToScreen()
     }
 }
 
-void normaliseAndPlaceVector(float x, float y, float z, int counter)
+void placeNormal(float x, float y, float z, int counter)
 {
     float magnitude = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
     original_normals[counter][0] = x / magnitude;
@@ -68,39 +68,42 @@ void normaliseAndPlaceVector(float x, float y, float z, int counter)
 
 void createSymbol()
 {
-    int closest_z = -1;
+    int closest_z = -1; // Used to determine the closest and furthest faces, the depth will be from closest_z to -closest_z
     float circle_width = 2;
-    int counter = 0;
-    int height_of_ridge = 0 - size / 5;
-    float gradient = -0.1;
-    float displacement = size / 2;
-    float z_fighting_offset = 0.2;
-    for (float depth = closest_z; round(10 * depth) <= -(10 * closest_z); depth += fill_spacing) // The encapsulating loop for depth
+    int counter = 0;                             // Used to count whenever a point is added
+    int height_of_ridge = 0 - size / 5;          // The top part of the inside of the logo
+    float gradient = -0.1;                       // Gradient of the slope
+    float displacement = size / 2;               // how far right the slope is shifted from the center
+    float z_fighting_offset = 0.2;               // Used to slightly translate the curved \_/  section outwards to prevent flickering where it meets the flat faces of the cylinder
+    float y_value_of_solid_fill = sin(4) * size; // This value is the lowest point where the entire logo is filled across from left to right
+
+    for (float depth = closest_z; depth <= -(closest_z); depth += fill_spacing) // The encapsulating loop for depth
     {
         bool closest_face = depth == closest_z;
-        bool furthest_face = (round(10 * depth) == -(10 * closest_z)); // simple way to compare a float to an int to 2 decimal places, used in for loop also
-        if (closest_face || furthest_face)                             // only passes if doing the closes or furthest z value so the shape is hollow
+        bool furthest_face = depth + fill_spacing > -closest_z; // To see if we are on the last run of the for loop
+
+        if (closest_face || furthest_face) // only passes if doing the closes or furthest z value so the shape is hollow, this is the ring part of the logo
         {
-            for (float i = 0; i < circle_width / 2; i += fill_spacing) // draws the circle faces
+            for (float i = 0; i <= circle_width / 2; i += fill_spacing) // loops outwards from closer to further away from the centre
             {
-                for (float theta = 0; theta < (M_PI * 2); theta += theta_spacing)
+                for (float theta = 0; theta < (M_PI * 2); theta += theta_spacing) // draws the circle at the current distance from the centre
                 {
                     float x = cos(theta) * (size + i);
                     float y = sin(theta) * (size + i);
                     original_mesh[counter][0] = x;
                     original_mesh[counter][1] = y;
                     original_mesh[counter][2] = depth;
-                    if (i == 0)
+                    if (i == 0) // This creates an inside circle at the closest and furthest depths which rounds off the edge
                     {
-                        normaliseAndPlaceVector(-x, -y, 0, counter); // inside circle
+                        placeNormal(-x, -y, 0, counter); // inside circle, normal vector is -x,-y because that would create vector from the point on the circle to the origin
                     }
-                    else if (i == 1)
+                    else if (i + fill_spacing > circle_width / 2) // final loop, do outside circle so the flat faces of the cylinder extend all the way out to the edge of the circle
                     {
-                        normaliseAndPlaceVector(x, y, 0, counter); // outside circle
+                        placeNormal(x, y, 0, counter);
                     }
-                    else // must be part of the middle section, which either faces towards or away from the camera initially
+                    else // must be part of the middle section, which either faces towards or away from the camera initially so the depth is used as the normal vector
                     {
-                        normaliseAndPlaceVector(0, 0, depth, counter);
+                        placeNormal(0, 0, depth, counter);
                     }
                     counter++;
                 }
@@ -108,7 +111,7 @@ void createSymbol()
         }
         else
         {
-            for (float i = 0; i < circle_width; i += circle_width / 2) // Just draw the inside and outside of the cyclinder
+            for (float i = 0; i < circle_width; i += circle_width / 2) // Only draw the inside and outside curved faces of the cyclinder
             {
                 for (float theta = 0; theta < (M_PI * 2); theta += theta_spacing)
                 {
@@ -119,19 +122,18 @@ void createSymbol()
                     original_mesh[counter][2] = depth;
                     if (i == 0)
                     {
-                        normaliseAndPlaceVector(-x, -y, 0, counter); // inside circle
+                        placeNormal(-x, -y, 0, counter); // inside circle
                     }
                     else
                     {
-                        normaliseAndPlaceVector(x, y, 0, counter); // outside circle
+                        placeNormal(x, y, 0, counter); // outside circle
                     }
                     counter++;
                 }
             }
         }
-        float y_value_of_solid_fill = sin(4) * size;
-
-        if (closest_face || furthest_face) // do either closest or furthest face, only at start and end of z loop so it is hollow.
+        // This code generates the logo inside the ring
+        if (closest_face || furthest_face) // again, do either closest or furthest face, only at start and end of z loop so it is hollow.
         {
             // traverse bottom up, left to right, this is the curved solid fill
             for (float row = -size - z_fighting_offset; row < y_value_of_solid_fill + size / 4; row += fill_spacing) // bottom up
@@ -153,7 +155,7 @@ void createSymbol()
                         {
                             original_mesh[counter][2] = depth + z_fighting_offset;
                         }
-                        normaliseAndPlaceVector(0, 0, depth, counter);
+                        placeNormal(0, 0, depth, counter);
                         counter++;
                     }
                     else if (row < y_value_of_solid_fill)
@@ -168,7 +170,7 @@ void createSymbol()
                         {
                             original_mesh[counter][2] = depth + z_fighting_offset;
                         }
-                        normaliseAndPlaceVector(0, 0, depth, counter);
+                        placeNormal(0, 0, depth, counter);
                         counter++;
                     }
                 }
@@ -183,7 +185,7 @@ void createSymbol()
                     original_mesh[counter][0] = column;
                     original_mesh[counter][1] = row;
                     original_mesh[counter][2] = depth;
-                    normaliseAndPlaceVector(0, 0, depth, counter);
+                    placeNormal(0, 0, depth, counter);
                     counter++;
                 }
             }
@@ -198,7 +200,7 @@ void createSymbol()
                 original_mesh[counter][0] = displacement + (-gradient * row_num);
                 original_mesh[counter][1] = row;
                 original_mesh[counter][2] = depth;
-                normaliseAndPlaceVector(1, gradient, 0, counter);
+                placeNormal(1, gradient, 0, counter);
                 counter++;
             }
 
@@ -208,7 +210,7 @@ void createSymbol()
                 original_mesh[counter][0] = column;
                 original_mesh[counter][1] = height_of_ridge;
                 original_mesh[counter][2] = depth;
-                normaliseAndPlaceVector(0, 1, 0, counter);
+                placeNormal(0, 1, 0, counter);
                 counter++;
             }
             // vertical wall
@@ -217,7 +219,7 @@ void createSymbol()
                 original_mesh[counter][0] = -(size / 2);
                 original_mesh[counter][1] = row;
                 original_mesh[counter][2] = depth;
-                normaliseAndPlaceVector(-1, 0, 0, counter);
+                placeNormal(-1, 0, 0, counter);
                 counter++;
             }
             // left most flat lid
@@ -226,7 +228,7 @@ void createSymbol()
                 original_mesh[counter][0] = column;
                 original_mesh[counter][1] = y_value_of_solid_fill;
                 original_mesh[counter][2] = depth;
-                normaliseAndPlaceVector(0, 1, 0, counter);
+                placeNormal(0, 1, 0, counter);
                 counter++;
             }
         }
